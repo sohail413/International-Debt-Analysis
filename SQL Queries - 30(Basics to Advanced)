@@ -1,0 +1,298 @@
+# International Debt Analysis — SQL Queries
+
+This document contains the **30 SQL analytical queries** used in the *International Debt Analysis System* project. Queries are grouped into **Basic**, **Intermediate**, and **Advanced** levels and are written against a table named `international_debt` with the following assumed schema:
+
+| Column          | Description                          |
+|-----------------|---------------------------------------|
+| `country_name`  | Name of the country                  |
+| `country_code`  | ISO country code                     |
+| `indicator_name`| Name of the debt indicator           |
+| `indicator_code`| Code of the debt indicator           |
+| `debt`          | Debt value (in USD)                  |
+
+> 💡 Adjust table/column names as per your actual database schema.
+
+---
+
+## 📁 Table of Contents
+- [Basic Queries](#-basic-queries)
+- [Intermediate Level](#-intermediate-level)
+- [Advanced Level](#-advanced-level)
+
+---
+
+## 🔹 Basic Queries
+
+**1. Retrieve all distinct country names from the dataset.**
+```sql
+SELECT DISTINCT country_name
+FROM international_debt;
+```
+
+**2. Count the total number of countries available.**
+```sql
+SELECT COUNT(DISTINCT country_name) AS total_countries
+FROM international_debt;
+```
+
+**3. Find the total number of indicators present.**
+```sql
+SELECT COUNT(DISTINCT indicator_name) AS total_indicators
+FROM international_debt;
+```
+
+**4. Display the first 10 records of the dataset.**
+```sql
+SELECT *
+FROM international_debt
+LIMIT 10;
+```
+
+**5. Calculate the total global debt.**
+```sql
+SELECT SUM(debt) AS total_global_debt
+FROM international_debt;
+```
+
+**6. List all unique indicator names.**
+```sql
+SELECT DISTINCT indicator_name
+FROM international_debt;
+```
+
+**7. Find the number of records for each country.**
+```sql
+SELECT country_name, COUNT(*) AS record_count
+FROM international_debt
+GROUP BY country_name;
+```
+
+**8. Display all records where debt is greater than 1 billion USD.**
+```sql
+SELECT *
+FROM international_debt
+WHERE debt > 1000000000;
+```
+
+**9. Find the minimum, maximum, and average debt values.**
+```sql
+SELECT
+    MIN(debt) AS min_debt,
+    MAX(debt) AS max_debt,
+    AVG(debt) AS avg_debt
+FROM international_debt;
+```
+
+**10. Count total number of records in the dataset.**
+```sql
+SELECT COUNT(*) AS total_records
+FROM international_debt;
+```
+
+---
+
+## 🔹 Intermediate Level
+
+**1. Find the total debt for each country.**
+```sql
+SELECT country_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY country_name;
+```
+
+**2. Display the top 10 countries with the highest total debt.**
+```sql
+SELECT country_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY country_name
+ORDER BY total_debt DESC
+LIMIT 10;
+```
+
+**3. Find the average debt per country.**
+```sql
+SELECT country_name, AVG(debt) AS avg_debt
+FROM international_debt
+GROUP BY country_name;
+```
+
+**4. Calculate total debt for each indicator.**
+```sql
+SELECT indicator_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY indicator_name;
+```
+
+**5. Identify the indicator contributing the highest total debt.**
+```sql
+SELECT indicator_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY indicator_name
+ORDER BY total_debt DESC
+LIMIT 1;
+```
+
+**6. Find the country with the lowest total debt.**
+```sql
+SELECT country_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY country_name
+ORDER BY total_debt ASC
+LIMIT 1;
+```
+
+**7. Calculate total debt for each country and indicator combination.**
+```sql
+SELECT country_name, indicator_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY country_name, indicator_name;
+```
+
+**8. Count how many indicators each country has.**
+```sql
+SELECT country_name, COUNT(DISTINCT indicator_name) AS indicator_count
+FROM international_debt
+GROUP BY country_name;
+```
+
+**9. Display countries whose total debt is above the global average.**
+```sql
+SELECT country_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY country_name
+HAVING SUM(debt) > (SELECT AVG(debt) FROM international_debt);
+```
+
+**10. Rank countries based on total debt (highest to lowest).**
+```sql
+SELECT
+    country_name,
+    SUM(debt) AS total_debt,
+    RANK() OVER (ORDER BY SUM(debt) DESC) AS debt_rank
+FROM international_debt
+GROUP BY country_name;
+```
+
+---
+
+## 🔹 Advanced Level
+
+**1. Find the top 5 indicators contributing most to global debt.**
+```sql
+SELECT indicator_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY indicator_name
+ORDER BY total_debt DESC
+LIMIT 5;
+```
+
+**2. Calculate percentage contribution of each country to total global debt.**
+```sql
+SELECT
+    country_name,
+    SUM(debt) AS total_debt,
+    ROUND(SUM(debt) * 100.0 / (SELECT SUM(debt) FROM international_debt), 2) AS pct_contribution
+FROM international_debt
+GROUP BY country_name
+ORDER BY pct_contribution DESC;
+```
+
+**3. Identify the top 3 countries for each indicator based on debt.**
+```sql
+SELECT country_name, indicator_name, total_debt
+FROM (
+    SELECT
+        country_name,
+        indicator_name,
+        SUM(debt) AS total_debt,
+        RANK() OVER (PARTITION BY indicator_name ORDER BY SUM(debt) DESC) AS rnk
+    FROM international_debt
+    GROUP BY country_name, indicator_name
+) ranked
+WHERE rnk <= 3;
+```
+
+**4. Find the difference between maximum and minimum debt for each country.**
+```sql
+SELECT
+    country_name,
+    MAX(debt) - MIN(debt) AS debt_difference
+FROM international_debt
+GROUP BY country_name;
+```
+
+**5. Create a view for the top 10 countries with highest debt.**
+```sql
+CREATE VIEW top_10_countries_debt AS
+SELECT country_name, SUM(debt) AS total_debt
+FROM international_debt
+GROUP BY country_name
+ORDER BY total_debt DESC
+LIMIT 10;
+```
+
+**6. Categorize countries into High Debt, Medium Debt, and Low Debt (based on thresholds).**
+```sql
+SELECT
+    country_name,
+    SUM(debt) AS total_debt,
+    CASE
+        WHEN SUM(debt) >= 100000000000 THEN 'High Debt'
+        WHEN SUM(debt) >= 10000000000  THEN 'Medium Debt'
+        ELSE 'Low Debt'
+    END AS debt_category
+FROM international_debt
+GROUP BY country_name;
+```
+
+**7. Use window functions to calculate cumulative debt per country.**
+```sql
+SELECT
+    country_name,
+    indicator_name,
+    debt,
+    SUM(debt) OVER (PARTITION BY country_name ORDER BY indicator_name) AS cumulative_debt
+FROM international_debt;
+```
+
+**8. Find indicators where average debt is higher than overall average debt.**
+```sql
+SELECT indicator_name, AVG(debt) AS avg_debt
+FROM international_debt
+GROUP BY indicator_name
+HAVING AVG(debt) > (SELECT AVG(debt) FROM international_debt);
+```
+
+**9. Identify countries contributing more than 5% of global debt.**
+```sql
+SELECT
+    country_name,
+    SUM(debt) AS total_debt,
+    ROUND(SUM(debt) * 100.0 / (SELECT SUM(debt) FROM international_debt), 2) AS pct_contribution
+FROM international_debt
+GROUP BY country_name
+HAVING SUM(debt) * 100.0 / (SELECT SUM(debt) FROM international_debt) > 5;
+```
+
+**10. Find the most dominant indicator (highest contribution) for each country.**
+```sql
+SELECT country_name, indicator_name, total_debt
+FROM (
+    SELECT
+        country_name,
+        indicator_name,
+        SUM(debt) AS total_debt,
+        RANK() OVER (PARTITION BY country_name ORDER BY SUM(debt) DESC) AS rnk
+    FROM international_debt
+    GROUP BY country_name, indicator_name
+) ranked
+WHERE rnk = 1;
+```
+
+---
+
+## 📝 Notes
+- Replace `international_debt` with your actual table name if different.
+- `RANK()` and other window functions require **MySQL 8.0+**.
+- For older MySQL versions, use user-defined variables to simulate ranking.
+- Threshold values in the **High/Medium/Low Debt** categorization query should be adjusted based on the actual data distribution.
