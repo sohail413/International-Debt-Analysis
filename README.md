@@ -1,6 +1,6 @@
 # International-Debt-Analysis
 
-# International Debt Statistics — Analytics Pipeline
+## International Debt Statistics — Analytics Pipeline
 
 End-to-end pipeline: clean raw World Bank IDS data → EDA → interactive Streamlit dashboard.
 
@@ -33,21 +33,40 @@ python eda.py
 Prints console insights (top/bottom countries, region & income-group breakdowns, top indicators,
 global trend) and saves 5 PNG charts to `eda_charts/`.
 
-## 3. Dashboard
+## 3. Dashboard — Unified App (CSV **or** PostgreSQL)
+`app.py` is a single Streamlit app that can run off **either** data source —
+pick it with the radio button at the top of the sidebar:
+
+- **CSV File** — reads `cleaned_debt_data.csv` (from step 1 above). Gives you full
+  Region / Income Group / Topic / world-map features since the CSV carries that metadata.
+- **PostgreSQL Database** — connects live to your pgAdmin-managed DB. Expects:
+  - `debt` — columns: `"country name"`, `"series code"`, `year`, `value`
+  - `seriesmd` — columns: `code`, `"indicator name"`
+
+  Enter Host / Port / Database / User / Password in the sidebar (or set env vars
+  `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` before launching).
+  Since the raw `debt`/`seriesmd` tables don't carry Region/Income Group/Topic,
+  the app gracefully falls back to country-only views (bar chart instead of
+  choropleth map, etc.) in this mode — an extra **🛠️ Custom SQL Query** tab is
+  also added so you can run any read-only query straight from the dashboard.
+
 ```bash
 streamlit run app.py
 ```
 Open the local URL Streamlit prints (usually http://localhost:8501).
 
 ### Dashboard tabs
-1. **Country-wise Debt** — choropleth map + region pie + sortable table for the selected indicator/year
+1. **Country-wise Debt** — choropleth map (CSV mode) or bar chart (DB mode) + region/top-5 pie + sortable table
 2. **Top / Bottom Countries** — adjustable top-N / bottom-N bar charts
-3. **Indicator Distribution** — top indicators by value + topic-level treemap
-4. **Trends Over Time** — regional trend lines, country comparison, YoY % change
-5. **Raw Data Explorer** — filtered table + CSV download
+3. **Indicator Distribution** — top indicators by value + topic treemap (CSV mode only)
+4. **Trends Over Time** — regional/global trend lines, country comparison, cumulative debt, YoY % change
+5. **Rankings & Tiers** — ranked table, High/Medium/Low tier classification, max−min spread
+6. **5%+ Contributors** — countries over 5% share of the selected total, top-3-per-indicator
+7. **Raw Data Explorer** — filtered table + CSV download
+8. **Custom SQL Query** *(PostgreSQL mode only)* — free-form read-only SQL box with CSV export
 
 ### Sidebar filters
-Year range · Region · Income Group · Primary indicator (drives most charts)
+Data source toggle · Year range · Region · Income Group (CSV mode only) · Primary indicator (drives most charts)
 
 ## Notes
 - Data source: World Bank International Debt Statistics (IDS), through 2032 (forecast years included where reported).
